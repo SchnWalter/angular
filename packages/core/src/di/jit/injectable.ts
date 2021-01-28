@@ -33,9 +33,14 @@ export function compileInjectable(type: Type<any>, srcMeta?: Injectable): void {
     Object.defineProperty(type, NG_PROV_DEF, {
       get: () => {
         if (ngInjectableDef === null) {
-          ngInjectableDef = getCompilerFacade().compileInjectable(
-              angularCoreDiEnv, `ng:///${type.name}/ɵprov.js`,
-              getInjectableMetadata(type, srcMeta));
+          try {
+            ngInjectableDef = getCompilerFacade().compileInjectable(
+                angularCoreDiEnv, `ng:///${type.name}/ɵprov.js`,
+                getInjectableMetadata(type, srcMeta));
+          } catch (e) {
+            ngDevMode && console.warn(`Failed to compile injectable for ${type.name}`);
+            throw e;
+          }
         }
         return ngInjectableDef;
       },
@@ -47,16 +52,21 @@ export function compileInjectable(type: Type<any>, srcMeta?: Injectable): void {
     Object.defineProperty(type, NG_FACTORY_DEF, {
       get: () => {
         if (ngFactoryDef === null) {
-          const metadata = getInjectableMetadata(type, srcMeta);
-          const compiler = getCompilerFacade();
-          ngFactoryDef = compiler.compileFactory(angularCoreDiEnv, `ng:///${type.name}/ɵfac.js`, {
-            name: metadata.name,
-            type: metadata.type,
-            typeArgumentCount: metadata.typeArgumentCount,
-            deps: reflectDependencies(type),
-            injectFn: 'inject',
-            target: compiler.R3FactoryTarget.Injectable
-          });
+          try {
+            const metadata = getInjectableMetadata(type, srcMeta);
+            const compiler = getCompilerFacade();
+            ngFactoryDef = compiler.compileFactory(angularCoreDiEnv, `ng:///${type.name}/ɵfac.js`, {
+              name: metadata.name,
+              type: metadata.type,
+              typeArgumentCount: metadata.typeArgumentCount,
+              deps: reflectDependencies(type),
+              injectFn: 'inject',
+              target: compiler.R3FactoryTarget.Injectable
+            });
+          } catch (e) {
+            ngDevMode && console.warn(`Failed to compile factory for ${type.name}`);
+            throw e;
+          }
         }
         return ngFactoryDef;
       },
